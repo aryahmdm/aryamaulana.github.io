@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Image Compressor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library untuk kompresi lebih kuat -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-6">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-lg w-full">
+        <h1 class="text-2xl font-bold mb-2 text-blue-400">Pro Compressor Pro</h1>
+        <p class="text-slate-400 mb-6 text-sm">Kompresi maksimal dengan resize otomatis & konversi WebP.</p>
+
+        <!-- Area Upload -->
+        <input type="file" id="imageInput" accept="image/*" class="hidden">
+        <label for="imageInput" class="block border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 transition mb-6">
+            <span id="statusText" class="text-slate-300 font-medium">Klik untuk pilih gambar</span>
+        </label>
+
+        <!-- Pengaturan -->
+        <div class="space-y-4 mb-6">
+            <div>
+                <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Target Ukuran Maksimal: <span id="sizeDisplay" class="text-blue-400">1</span> MB</label>
+                <input type="range" id="maxSize" min="0.1" max="5" step="0.1" value="1" class="w-full accent-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Lebar Maksimal (px): <span id="widthDisplay" class="text-blue-400">1920</span>px</label>
+                <input type="range" id="maxWidth" min="400" max="3840" step="100" value="1920" class="w-full accent-blue-500">
+            </div>
+        </div>
+
+        <!-- Info Hasil -->
+        <div id="resultBox" class="hidden bg-slate-700 p-4 rounded-lg mb-6 flex justify-between items-center animate-pulse">
+            <div>
+                <p class="text-xs text-slate-400 uppercase">Hasil Kompresi</p>
+                <p id="finalSize" class="text-lg font-bold text-green-400">0 KB</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-slate-400 uppercase">Penghematan</p>
+                <p id="reduction" class="text-lg font-bold">-0%</p>
+            </div>
+        </div>
+
+        <button id="compressBtn" class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 py-3 rounded-xl font-bold transition flex justify-center items-center gap-2">
+            🚀 Mulai Kompresi
+        </button>
+
+        <a id="downloadLink" class="hidden w-full mt-4 text-center text-blue-400 underline font-medium">Download Gambar</a>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const compressBtn = document.getElementById('compressBtn');
+        const statusText = document.getElementById('statusText');
+        const maxSizeInput = document.getElementById('maxSize');
+        const maxWidthInput = document.getElementById('maxWidth');
+        
+        // Display Updates
+        maxSizeInput.oninput = () => document.getElementById('sizeDisplay').innerText = maxSizeInput.value;
+        maxWidthInput.oninput = () => document.getElementById('widthDisplay').innerText = maxWidthInput.value;
+
+        compressBtn.onclick = async () => {
+            const file = imageInput.files[0];
+            if (!file) return alert('Pilih gambar dulu!');
+
+            compressBtn.disabled = true;
+            compressBtn.innerText = "Sedang Memproses...";
+            
+            // Konfigurasi kompresi yang benar-benar "nyata"
+            const options = {
+                maxSizeMB: parseFloat(maxSizeInput.value), // Target ukuran
+                maxWidthOrHeight: parseInt(maxWidthInput.value), // Target dimensi
+                useWebWorker: true, // Biar gak lag
+                fileType: 'image/webp' // OTOMATIS KONVERSI KE WEBP (Format paling kecil)
+            };
+
+            try {
+                const compressedFile = await imageCompression(file, options);
+                
+                // Hitung statistik
+                const originalSize = file.size;
+                const newSize = compressedFile.size;
+                const percent = Math.round(((originalSize - newSize) / originalSize) * 100);
+
+                // Tampilkan hasil
+                document.getElementById('resultBox').classList.remove('hidden');
+                document.getElementById('resultBox').classList.remove('animate-pulse');
+                document.getElementById('finalSize').innerText = (newSize / 1024).toFixed(2) + " KB";
+                document.getElementById('reduction').innerText = "-" + percent + "%";
+
+                // Setup Download
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = URL.createObjectURL(compressedFile);
+                downloadLink.download = `compressed_${file.name.split('.')[0]}.webp`;
+                downloadLink.classList.remove('hidden');
+                downloadLink.innerText = "Download " + downloadLink.download;
+
+            } catch (error) {
+                console.error(error);
+                alert('Gagal mengompres. Coba gambar lain.');
+            } finally {
+                compressBtn.disabled = false;
+                compressBtn.innerText = "🚀 Mulai Kompresi";
+            }
+        };
+
+        imageInput.onchange = () => {
+            if(imageInput.files[0]) statusText.innerText = "File: " + imageInput.files[0].name;
+        };
+    </script>
+</body>
+</html>
